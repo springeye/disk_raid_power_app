@@ -36,6 +36,7 @@ import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -45,6 +46,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import org.koin.androidx.compose.koinViewModel
 
@@ -56,7 +58,7 @@ fun ESP32ControlApp() {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("ESP32 控制器") },
+                title = { Text(stringResource(R.string.app_name)) },
                 actions = {
                     ConnectionStatus(viewModel)
                 }
@@ -75,15 +77,15 @@ fun ESP32ControlScreen(
     viewModel: ESP32ControlViewModel,
     modifier: Modifier = Modifier
 ) {
-    val connectionState by viewModel.connectionState
-    val scanState by viewModel.scanState
-    val devices = viewModel.devices
-    val selectedDevice by viewModel.selectedDevice
-    val wifiStatus by viewModel.wifiStatus
-    val deviceData by viewModel.deviceData
-    val otaProgress by viewModel.otaProgress
-    val otaStatus by viewModel.otaStatus
-    val messages = viewModel.messages
+    val connectionState by viewModel.connectionState.collectAsState()
+    val scanState by viewModel.scanState.collectAsState()
+    val devices by viewModel.devices.collectAsState()
+    val selectedDevice by viewModel.selectedDevice.collectAsState()
+    val wifiStatus by viewModel.wifiStatus.collectAsState()
+    val deviceData by viewModel.deviceData.collectAsState()
+    val otaProgress by viewModel.otaProgress.collectAsState()
+    val otaStatus by viewModel.otaStatus.collectAsState()
+    val messages by viewModel.messages.collectAsState()
 
     var selectedTab by remember { mutableIntStateOf(0) }
     var ssid by remember { mutableStateOf("") }
@@ -451,7 +453,7 @@ fun ConnectionStatusIndicator(state: BluetoothState) {
 
 @Composable
 fun ConnectionStatus(viewModel: ESP32ControlViewModel) {
-    val connectionState by viewModel.connectionState
+    val connectionState by viewModel.connectionState.collectAsState()
     ConnectionStatusIndicator(connectionState)
 }
 

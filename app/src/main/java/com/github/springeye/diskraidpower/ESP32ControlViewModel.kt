@@ -148,7 +148,8 @@ class ESP32ControlViewModel(
     }
 
     // 连接设备
-
+    var expectedLen = -1
+    val buffer = StringBuilder()
     fun connectToDevice(device: BluetoothDevice) {
         _selectedDevice.value = device
         _connectionState.value = BluetoothState.CONNECTING
@@ -190,8 +191,23 @@ class ESP32ControlViewModel(
                 gatt: BluetoothGatt,
                 characteristic: BluetoothGattCharacteristic
             ) {
-                val data = characteristic.value?.toString(Charsets.UTF_8)
-                data?.let { handleIncomingData(it) }
+                val chunk = characteristic.value.toString(Charsets.UTF_8)
+                if (expectedLen == -1 && chunk.startsWith("LEN:")) {
+                    // 解析总长度
+                    expectedLen = chunk.substringAfter("LEN:").toIntOrNull() ?: -1
+                    buffer.clear()
+                } else if (expectedLen > 0) {
+                    buffer.append(chunk)
+                    if (buffer.length >= expectedLen) {
+                        val data = buffer.toString()
+                        // 处理完整数据
+                        expectedLen = -1
+                        buffer.clear()
+                        data.let { handleIncomingData(it) }
+                    }
+                }
+
+//                val data = characteristic.value?.toString(Charsets.UTF_8)
             }
 
             override fun onCharacteristicWrite(

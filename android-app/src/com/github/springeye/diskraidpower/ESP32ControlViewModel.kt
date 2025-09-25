@@ -30,6 +30,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.util.UUID
@@ -139,6 +140,7 @@ class ESP32ControlViewModel(
     var expectedLen = -1
     val buffer = StringBuilder()
     fun connectToDevice(device: BluetoothDevice) {
+        stopScan()
         _uiState.value = _uiState.value.copy(selectedDevice = device, connectionState = BluetoothState.CONNECTING, autoReconnect = true)
         addMessage("正在连接: ${device.name ?: device.address}")
         Log.d(TAG, "正在连接: ${device.name ?: device.address}")
@@ -394,7 +396,9 @@ class ESP32ControlViewModel(
 
     // 断开连接
     fun disconnect() {
-        _uiState.value = _uiState.value.copy(connectionState = BluetoothState.DISCONNECTED, selectedDevice = null, autoReconnect = false)
+        _uiState.update {
+            it.copy(connectionState = BluetoothState.DISCONNECTED, selectedDevice = null, autoReconnect = false)
+        }
         bluetoothGatt?.disconnect()
         bluetoothGatt?.close()
         bluetoothGatt = null

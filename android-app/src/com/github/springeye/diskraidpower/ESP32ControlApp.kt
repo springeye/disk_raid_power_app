@@ -4,6 +4,7 @@ import android.bluetooth.BluetoothDevice
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.provider.Settings
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -21,6 +22,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -34,6 +36,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -48,7 +51,17 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.google.accompanist.permissions.ExperimentalPermissionsApi
+import com.google.accompanist.permissions.isGranted
+import com.google.accompanist.permissions.rememberMultiplePermissionsState
+import com.google.accompanist.permissions.shouldShowRationale
 import org.koin.androidx.compose.koinViewModel
+
+// 权限相关UI状态
+data class PermissionUiState(
+    val showDialog: Boolean = false,
+    val permanentlyDenied: Boolean = false
+)
 
 data class ESP32ControlUiState(
     val selectedTab: Int = 0,
@@ -58,7 +71,7 @@ data class ESP32ControlUiState(
     val selectedFile: Uri? = null
 )
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalPermissionsApi::class)
 @Composable
 fun ESP32ControlApp() {
     val viewModel: ESP32ControlViewModel = koinViewModel()
@@ -79,6 +92,7 @@ fun ESP32ControlApp() {
     }
 }
 
+@OptIn(ExperimentalPermissionsApi::class)
 @Composable
 fun ESP32ControlScreen(
     viewModel: ESP32ControlViewModel,
@@ -87,6 +101,66 @@ fun ESP32ControlScreen(
     val vmState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
     var uiState by remember { mutableStateOf(ESP32ControlUiState()) }
+    var permissionUiState by remember { mutableStateOf(PermissionUiState()) }
+
+    val permissionsState = rememberMultiplePermissionsState(
+        permissions = listOf(
+            android.Manifest.permission.BLUETOOTH_SCAN,
+            android.Manifest.permission.BLUETOOTH_CONNECT,
+            android.Manifest.permission.ACCESS_FINE_LOCATION
+        )
+    )
+
+    // 权限检查和请求逻辑
+    fun checkAndRequestPermissions(onGranted: () -> Unit) {
+        if (permissionsState.allPermissionsGranted) {
+            onGranted()
+        } else {
+            permissionUiState = permissionUiState.copy(showDialog = true)
+        }
+    }
+
+    // 权限对话框
+    if (permissionUiState.showDialog) {
+        val deniedList = permissionsState.permissions.filter { !it.status.isGranted }
+        val permanentlyDenied = deniedList.any { it.status.shouldShowRationale.not() }
+        AlertDialog(
+            onDismissRequest = { permissionUiState = permissionUiState.copy(showDialog = false) },
+            title = { Text("需要蓝牙权限") },
+            text = {
+                if (permanentlyDenied) {
+                    Text("您已永久拒绝蓝牙相关权限，必须前往设置页面手动授权，否则无法使用低功耗蓝牙功能。")
+                } else {
+                    Text("应用需要低功耗蓝牙相关权限才能正常工作，请授权。")
+                }
+            },
+            confirmButton = {
+                if (permanentlyDenied) {
+                    TextButton(onClick = {
+                        permissionUiState = permissionUiState.copy(showDialog = false)
+                        val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                            data = android.net.Uri.fromParts("package", context.packageName, null)
+                        }
+                        context.startActivity(intent)
+                    }) {
+                        Text("去设置")
+                    }
+                } else {
+                    TextButton(onClick = {
+                        permissionUiState = permissionUiState.copy(showDialog = false)
+                        permissionsState.launchMultiplePermissionRequest()
+                    }) {
+                        Text("授权")
+                    }
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { permissionUiState = permissionUiState.copy(showDialog = false) }) {
+                    Text("取消")
+                }
+            }
+        )
+    }
 
     Column(
         modifier = modifier
@@ -110,9 +184,13 @@ fun ESP32ControlScreen(
                 scanState = vmState.scanState,
                 connectionState = vmState.connectionState,
                 selectedDevice = vmState.selectedDevice,
-                onScan = { viewModel.scanDevices(context) },
+                onScan = {
+                    checkAndRequestPermissions { viewModel.scanDevices(context) }
+                },
                 onStopScan = { viewModel.stopScan() },
-                onConnect = { viewModel.connectToDevice(it) },
+                onConnect = {
+                    checkAndRequestPermissions { viewModel.connectToDevice(it) }
+                },
                 onDisconnect = { viewModel.disconnect() }
             )
             1 -> ControlTab(

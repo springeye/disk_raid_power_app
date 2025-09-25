@@ -34,37 +34,25 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.util.UUID
 
+data class ESP32ControlViewModelState(
+    val connectionState: BluetoothState = BluetoothState.DISCONNECTED,
+    val scanState: ScanState = ScanState.IDLE,
+    val devices: List<BluetoothDevice> = emptyList(),
+    val selectedDevice: BluetoothDevice? = null,
+    val wifiStatus: String = "",
+    val deviceData: String = "",
+    val otaProgress: Int = 0,
+    val otaStatus: OtaState = OtaState.IDLE,
+    val messages: List<String> = emptyList()
+)
+
 class ESP32ControlViewModel(
     application: Application
 ) : AndroidViewModel(application) {
     val TAG = "ESP32ControlViewModel"
-    // 状态管理
-    private val _connectionState = MutableStateFlow(BluetoothState.DISCONNECTED)
-    val connectionState: StateFlow<BluetoothState> = _connectionState.asStateFlow()
-
-    private val _scanState = MutableStateFlow(ScanState.IDLE)
-    val scanState: StateFlow<ScanState> = _scanState.asStateFlow()
-
-    private val _devices = MutableStateFlow<List<BluetoothDevice>>(emptyList())
-    val devices: StateFlow<List<BluetoothDevice>> = _devices.asStateFlow()
-
-    private val _selectedDevice = MutableStateFlow<BluetoothDevice?>(null)
-    val selectedDevice: StateFlow<BluetoothDevice?> = _selectedDevice.asStateFlow()
-
-    private val _wifiStatus = MutableStateFlow("")
-    val wifiStatus: StateFlow<String> = _wifiStatus.asStateFlow()
-
-    private val _deviceData = MutableStateFlow("")
-    val deviceData: StateFlow<String> = _deviceData.asStateFlow()
-
-    private val _otaProgress = MutableStateFlow(0)
-    val otaProgress: StateFlow<Int> = _otaProgress.asStateFlow()
-
-    private val _otaStatus = MutableStateFlow(OtaState.IDLE)
-    val otaStatus: StateFlow<OtaState> = _otaStatus.asStateFlow()
-
-    private val _messages = MutableStateFlow<List<String>>(emptyList())
-    val messages: StateFlow<List<String>> = _messages.asStateFlow()
+    // 统一状态管理
+    private val _uiState = MutableStateFlow(ESP32ControlViewModelState())
+    val uiState: StateFlow<ESP32ControlViewModelState> = _uiState.asStateFlow()
 
     // 蓝牙相关对象
     private var bluetoothAdapter: BluetoothAdapter? = null
@@ -93,8 +81,7 @@ class ESP32ControlViewModel(
             Log.d(TAG, "缺少蓝牙权限")
             return
         }
-        _scanState.value = ScanState.SCANNING
-        _devices.value = emptyList()
+        _uiState.value = _uiState.value.copy(scanState = ScanState.SCANNING, devices = emptyList())
         addMessage("开始扫描设备...")
         Log.d(TAG, "开始扫描设备...")
         scanCallback = object : ScanCallback() {
@@ -102,16 +89,16 @@ class ESP32ControlViewModel(
                 super.onScanResult(callbackType, result)
                 result.device?.let { device ->
                     if (device.name?.contains("disk_raid_power", ignoreCase = true) == true) {
-                        if (_devices.value.none { it.address == device.address }) {
-                            _devices.value = _devices.value + device
+                        if (_uiState.value.devices.none { it.address == device.address }) {
+                            _uiState.value = _uiState.value.copy(devices = _uiState.value.devices + device)
                             addMessage("发现设备: "+ (device.name ?: "Unknown") + " - ${device.address}")
                             Log.d(TAG, "发现设备: ${device.name ?: "Unknown"} - ${device.address}")
                         }
                         // 自动重连逻辑
                         if (lastConnectedDeviceAddress != null &&
                             device.address == lastConnectedDeviceAddress &&
-                            _connectionState.value != BluetoothState.CONNECTED &&
-                            _connectionState.value != BluetoothState.CONNECTING
+                            _uiState.value.connectionState != BluetoothState.CONNECTED &&
+                            _uiState.value.connectionState != BluetoothState.CONNECTING
                         ) {
                             addMessage("检测到上次已连接设备，自动重连: ${device.address}")
                             Log.d(TAG, "检测到上次已连接设备，自动重连: ${device.address}")
@@ -123,7 +110,7 @@ class ESP32ControlViewModel(
 
             override fun onScanFailed(errorCode: Int) {
                 super.onScanFailed(errorCode)
-                _scanState.value = ScanState.IDLE
+                _uiState.value = _uiState.value.copy(scanState = ScanState.IDLE)
                 addMessage("扫描失败: $errorCode")
                 Log.d(TAG, "扫描失败: $errorCode")
             }
@@ -141,7 +128,7 @@ class ESP32ControlViewModel(
     fun stopScan() {
         scanCallback?.let {
             bleScanner?.stopScan(it)
-            _scanState.value = ScanState.IDLE
+            _uiState.value = _uiState.value.copy(scanState = ScanState.IDLE)
             addMessage("停止扫描")
             Log.d(TAG, "停止扫描")
         }
@@ -151,8 +138,7 @@ class ESP32ControlViewModel(
     var expectedLen = -1
     val buffer = StringBuilder()
     fun connectToDevice(device: BluetoothDevice) {
-        _selectedDevice.value = device
-        _connectionState.value = BluetoothState.CONNECTING
+        _uiState.value = _uiState.value.copy(selectedDevice = device, connectionState = BluetoothState.CONNECTING)
         addMessage("正在连接: ${device.name ?: device.address}")
         Log.d(TAG, "正在连接: ${device.name ?: device.address}")
         lastConnectedDeviceAddress = device.address
@@ -161,14 +147,14 @@ class ESP32ControlViewModel(
             override fun onConnectionStateChange(gatt: BluetoothGatt, status: Int, newState: Int) {
                 when (newState) {
                     BluetoothProfile.STATE_CONNECTED -> {
-                        _connectionState.value = BluetoothState.CONNECTED
+                        _uiState.value = _uiState.value.copy(connectionState = BluetoothState.CONNECTED)
                         addMessage("连接成功")
                         Log.d(TAG, "连接成功")
                         gatt.discoverServices()
                     }
 
                     BluetoothProfile.STATE_DISCONNECTED -> {
-                        _connectionState.value = BluetoothState.DISCONNECTED
+                        _uiState.value = _uiState.value.copy(connectionState = BluetoothState.DISCONNECTED)
                         addMessage("连接断开")
                         Log.d(TAG, "连接断开")
                         bluetoothGatt = null
@@ -259,10 +245,10 @@ class ESP32ControlViewModel(
         Log.d(TAG, "收到数据: $data")
 
         when {
-            data.startsWith("WIFI:") -> _wifiStatus.value = data
-            data.startsWith("STATUS:") -> _deviceData.value = data
+            data.startsWith("WIFI:") -> _uiState.value = _uiState.value.copy(wifiStatus = data)
+            data.startsWith("STATUS:") -> _uiState.value = _uiState.value.copy(deviceData = data)
             data.startsWith("OTA:") -> handleOtaResponse(data)
-            else -> _deviceData.value = data
+            else -> _uiState.value = _uiState.value.copy(deviceData = data)
         }
     }
 
@@ -308,7 +294,7 @@ class ESP32ControlViewModel(
     fun startOtaUpdate(context: Context, fileUri: Uri) {
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                _otaStatus.value = OtaState.PREPARING
+                _uiState.value = _uiState.value.copy(otaStatus = OtaState.PREPARING)
                 val contentResolver = context.contentResolver
                 val inputStream = contentResolver.openInputStream(fileUri)
                 val file = readFileFromUri(context, fileUri)
@@ -329,7 +315,7 @@ class ESP32ControlViewModel(
                     var totalRead = 0
                     var bytesRead: Int
 
-                    _otaStatus.value = OtaState.TRANSFERRING
+                    _uiState.value = _uiState.value.copy(otaStatus = OtaState.TRANSFERRING)
 
                     while (stream.read(buffer).also { bytesRead = it } != -1) {
                         val data = "OTA:DATA" + String(buffer, 0, bytesRead, Charsets.UTF_8)
@@ -337,19 +323,19 @@ class ESP32ControlViewModel(
                         totalRead += bytesRead
 
                         val progress = (totalRead * 100 / fileSize).toInt()
-                        _otaProgress.value = progress
+                        _uiState.value = _uiState.value.copy(otaProgress = progress)
 
                         delay(20) // 控制发送速率
                     }
 
                     // 发送结束命令
                     sendData("OTA:END")
-                    _otaStatus.value = OtaState.COMPLETED
+                    _uiState.value = _uiState.value.copy(otaStatus = OtaState.COMPLETED)
                     addMessage("OTA更新完成")
                     Log.d(TAG, "OTA更新完成")
                 }
             } catch (e: Exception) {
-                _otaStatus.value = OtaState.FAILED
+                _uiState.value = _uiState.value.copy(otaStatus = OtaState.FAILED)
                 addMessage("OTA更新失败: ${e.message}")
                 Log.d(TAG, "OTA更新失败: ${e.message}")
             }
@@ -359,19 +345,19 @@ class ESP32ControlViewModel(
     private fun handleOtaResponse(response: String) {
         when {
             response == "OTA:READY" -> {
-                _otaStatus.value = OtaState.READY
+                _uiState.value = _uiState.value.copy(otaStatus = OtaState.READY)
                 addMessage("设备准备就绪，开始传输")
                 Log.d(TAG, "设备准备就绪，开始传输")
             }
 
             response == "OTA:SUCCESS" -> {
-                _otaStatus.value = OtaState.COMPLETED
+                _uiState.value = _uiState.value.copy(otaStatus = OtaState.COMPLETED)
                 addMessage("OTA更新成功")
                 Log.d(TAG, "OTA更新成功")
             }
 
             response.startsWith("OTA:FAIL") -> {
-                _otaStatus.value = OtaState.FAILED
+                _uiState.value = _uiState.value.copy(otaStatus = OtaState.FAILED)
                 addMessage("OTA更新失败: $response")
                 Log.d(TAG, "OTA更新失败: $response")
             }
@@ -406,8 +392,7 @@ class ESP32ControlViewModel(
         bluetoothGatt?.disconnect()
         bluetoothGatt?.close()
         bluetoothGatt = null
-        _connectionState.value = BluetoothState.DISCONNECTED
-        _selectedDevice.value = null
+        _uiState.value = _uiState.value.copy(connectionState = BluetoothState.DISCONNECTED, selectedDevice = null)
         addMessage("已断开连接")
         Log.d(TAG, "已断开连接")
         // 断开时不清除 lastConnectedDeviceAddress，便于自动重连
@@ -439,11 +424,11 @@ class ESP32ControlViewModel(
     }
 
     fun clearMessages() {
-        _messages.value = emptyList()
+        _uiState.value = _uiState.value.copy(messages = emptyList())
     }
 
     private fun addMessage(msg: String) {
-        _messages.value = _messages.value + msg
+        _uiState.value = _uiState.value.copy(messages = _uiState.value.messages + msg)
     }
 
     companion object {

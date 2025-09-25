@@ -1,0 +1,20 @@
+product: android/app
+
+dependencies:
+  - ../shared
+  - "io.insert-koin:koin-android:3.5.3"
+  - "io.insert-koin:koin-androidx-compose:3.5.3"
+  - "androidx.core:core-ktx:1.12.0"
+  - $compose.preview
+
+settings:
+  android:
+    namespace: com.github.springeye.diskraidpower
+    applicationId: com.github.springeye.diskraidpower
+    minSdk: 26
+    targetSdk: 35
+    compileSdk: 35
+    signing:
+      enabled: true
+  compose: enabled
+  junit: junit-4

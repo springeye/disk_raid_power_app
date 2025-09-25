@@ -43,7 +43,8 @@ data class ESP32ControlViewModelState(
     val deviceData: String = "",
     val otaProgress: Int = 0,
     val otaStatus: OtaState = OtaState.IDLE,
-    val messages: List<String> = emptyList()
+    val messages: List<String> = emptyList(),
+    val autoReconnect: Boolean = true,
 )
 
 class ESP32ControlViewModel(
@@ -138,12 +139,13 @@ class ESP32ControlViewModel(
     var expectedLen = -1
     val buffer = StringBuilder()
     fun connectToDevice(device: BluetoothDevice) {
-        _uiState.value = _uiState.value.copy(selectedDevice = device, connectionState = BluetoothState.CONNECTING)
+        _uiState.value = _uiState.value.copy(selectedDevice = device, connectionState = BluetoothState.CONNECTING, autoReconnect = true)
         addMessage("正在连接: ${device.name ?: device.address}")
         Log.d(TAG, "正在连接: ${device.name ?: device.address}")
         lastConnectedDeviceAddress = device.address
 
         val gattCallback = object : BluetoothGattCallback() {
+
             override fun onConnectionStateChange(gatt: BluetoothGatt, status: Int, newState: Int) {
                 when (newState) {
                     BluetoothProfile.STATE_CONNECTED -> {
@@ -158,6 +160,9 @@ class ESP32ControlViewModel(
                         addMessage("连接断开")
                         Log.d(TAG, "连接断开")
                         bluetoothGatt = null
+                        if(_uiState.value.autoReconnect){
+                            scanDevices(getApplication())
+                        }
                     }
                 }
             }
@@ -389,16 +394,12 @@ class ESP32ControlViewModel(
 
     // 断开连接
     fun disconnect() {
+        _uiState.value = _uiState.value.copy(connectionState = BluetoothState.DISCONNECTED, selectedDevice = null, autoReconnect = false)
         bluetoothGatt?.disconnect()
         bluetoothGatt?.close()
         bluetoothGatt = null
-        _uiState.value = _uiState.value.copy(connectionState = BluetoothState.DISCONNECTED, selectedDevice = null)
         addMessage("已断开连接")
         Log.d(TAG, "已断开连接")
-        // 断开时不清除 lastConnectedDeviceAddress，便于自动重连
-        // 自动重连：断开后自动开始扫描
-        val context = getApplication<Application>().applicationContext
-        scanDevices(context)
     }
 
     // 工具函数

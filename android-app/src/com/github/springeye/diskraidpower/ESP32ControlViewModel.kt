@@ -1,6 +1,7 @@
 package com.github.springeye.diskraidpower
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.app.Application
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothDevice
@@ -24,8 +25,9 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.github.springeye.diskraidpower.BleApp
+import com.github.springeye.diskraidpower.ui.BleApp
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.IO
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -47,7 +49,7 @@ data class ESP32ControlViewModelState(
     val messages: List<String> = emptyList(),
     val autoReconnect: Boolean = true,
 )
-
+@SuppressLint("MissingPermission")
 class ESP32ControlViewModel(
     application: Application
 ) : AndroidViewModel(application) {
@@ -139,6 +141,8 @@ class ESP32ControlViewModel(
     // 连接设备
     var expectedLen = -1
     val buffer = StringBuilder()
+
+
     fun connectToDevice(device: BluetoothDevice) {
         stopScan()
         _uiState.value = _uiState.value.copy(selectedDevice = device, connectionState = BluetoothState.CONNECTING, autoReconnect = true)
@@ -147,6 +151,7 @@ class ESP32ControlViewModel(
         lastConnectedDeviceAddress = device.address
 
         val gattCallback = object : BluetoothGattCallback() {
+
 
             override fun onConnectionStateChange(gatt: BluetoothGatt, status: Int, newState: Int) {
                 when (newState) {

@@ -1,5 +1,6 @@
 product: android/app
-
+apply:
+  - ../common.module-template.yaml
 dependencies:
   - ../shared
   - $libs.koin.android
@@ -16,9 +17,7 @@ settings:
   android:
     namespace: com.github.springeye.diskraidpower
     applicationId: com.github.springeye.diskraidpower
-    minSdk: 26
-    targetSdk: 36
-    compileSdk: 36
+
     signing:
       enabled: true
   compose:

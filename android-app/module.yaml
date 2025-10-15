@@ -12,6 +12,8 @@ dependencies:
   - $libs.androidx.navigation3.runtime
   - $libs.androidx.lifecycle.viewmodel.navigation3
   - $libs.androidx.material3.adaptive.navigation3
+  - $libs.ktor.client.core
+  - $libs.ktor.client.okhttp
 
 settings:
   android:

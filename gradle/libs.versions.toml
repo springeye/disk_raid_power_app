@@ -1,10 +1,10 @@
 [versions]
-nav3Core = "1.0.0-alpha10"
-lifecycleViewmodelNav3 = "2.10.0-alpha04"
+nav3Core = "1.0.0-alpha11"
+lifecycleViewmodelNav3 = "2.10.0-alpha05"
 kotlinSerialization = "2.1.21"
 kotlinxSerializationCore = "1.8.1"
 material3AdaptiveNav3 = "1.0.0-alpha03"
-
+ktor = "3.3.1"
 [libraries]
 koin-android = "io.insert-koin:koin-android:4.1.1"
 koin-androidx-compose = "io.insert-koin:koin-androidx-compose:4.1.1"
@@ -17,6 +17,11 @@ androidx-lifecycle-viewmodel-navigation3 = { module = "androidx.lifecycle:lifecy
 kotlinx-serialization-core = { module = "org.jetbrains.kotlinx:kotlinx-serialization-core", version.ref = "kotlinxSerializationCore" }
 
 androidx-material3-adaptive-navigation3 = { group = "androidx.compose.material3.adaptive", name = "adaptive-navigation3", version.ref = "material3AdaptiveNav3" }
+
+
+ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
+ktor-client-okhttp = { module = "io.ktor:ktor-client-okhttp", version.ref = "ktor" }
+ktor-client-darwin = { module = "io.ktor:ktor-client-darwin", version.ref = "ktor" }
 
 [plugins]
 # Optional plugins

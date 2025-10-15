@@ -5,8 +5,7 @@ import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDe
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberNavBackStack
-import androidx.navigation3.runtime.rememberSavedStateNavEntryDecorator
-import androidx.navigation3.scene.rememberSceneSetupNavEntryDecorator
+import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import com.github.springeye.diskraidpower.ui.home.HomeRoute
 import kotlinx.serialization.Serializable
@@ -19,8 +18,9 @@ fun AppNav() {
     val backStack = rememberNavBackStack(Home)
     NavDisplay(
         entryDecorators = listOf(
-            rememberSceneSetupNavEntryDecorator(),
-            rememberSavedStateNavEntryDecorator(),
+            // Add the default decorators for managing scenes and saving state
+            rememberSaveableStateHolderNavEntryDecorator(),
+            // Then add the view model store decorator
             rememberViewModelStoreNavEntryDecorator()
         ),
         backStack = backStack,

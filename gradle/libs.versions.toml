@@ -1,6 +1,6 @@
 [versions]
-nav3Core = "1.0.0-alpha11"
-lifecycleViewmodelNav3 = "2.10.0-alpha05"
+nav3Core = "1.0.0-beta01"
+lifecycleViewmodelNav3 = "2.10.0-beta01"
 kotlinSerialization = "2.1.21"
 kotlinxSerializationCore = "1.8.1"
 material3AdaptiveNav3 = "1.0.0-alpha03"

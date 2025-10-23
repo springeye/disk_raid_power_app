@@ -13,7 +13,7 @@ import androidx.compose.ui.tooling.preview.Preview
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
-    state: HomeState,
+    state: EspState,
     onAction: (HomeAction) -> Unit
 ) {
     Scaffold(topBar = {
@@ -29,7 +29,7 @@ fun HomeScreen(
 @Preview(name = "Home")
 private fun HomeScreenPreview() {
     HomeScreen(
-        state = HomeState(),
+        state = EspState.Idle,
         onAction = {}
     )
 }

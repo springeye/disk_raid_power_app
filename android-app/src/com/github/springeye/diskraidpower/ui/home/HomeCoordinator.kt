@@ -11,7 +11,7 @@ import org.koin.androidx.compose.koinViewModel
 class HomeCoordinator(
     val viewModel: HomeViewModel
 ) {
-    val screenStateFlow = viewModel.stateFlow
+    val screenStateFlow = viewModel.state
     fun handle(action: HomeAction) {
         when (action) {
             HomeAction.OnClick -> { /* Handle action */

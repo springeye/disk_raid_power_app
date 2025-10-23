@@ -11,7 +11,7 @@ fun HomeRoute(
     coordinator: HomeCoordinator = rememberHomeCoordinator()
 ) {
     // State observing and declarations
-    val uiState by coordinator.screenStateFlow.collectAsState(HomeState())
+    val uiState by coordinator.screenStateFlow.collectAsState()
 
     // UI Actions
     val actionsHandler: (HomeAction) -> Unit = { action ->

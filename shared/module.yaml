@@ -10,7 +10,7 @@ dependencies:
 
 dependencies@android:
   # Compose integration with Android activities
-  - androidx.activity:activity-compose:1.12.0-alpha09: exported
+  - androidx.activity:activity-compose:1.12.0-beta01: exported
   - androidx.appcompat:appcompat:1.7.1: exported
 
 settings:

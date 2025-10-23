@@ -14,6 +14,8 @@ dependencies:
   - $libs.androidx.material3.adaptive.navigation3
   - $libs.ktor.client.core
   - $libs.ktor.client.okhttp
+  - "androidx.room:room-ktx:2.8.3"
+  - "androidx.room:room-runtime:2.8.3"
 
 settings:
   android:
@@ -28,4 +30,9 @@ settings:
   junit: junit-4
   kotlin:
     serialization:
-      enabled: true
+      format: json
+    ksp:
+      processorOptions:
+        room.schemaLocation: ../schema
+      processors:
+        - androidx.room:room-compiler:2.8.3

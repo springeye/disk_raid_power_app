@@ -17,6 +17,7 @@ dependencies:
   - $libs.ktor.client.okhttp
   - "androidx.room:room-ktx:2.8.3"
   - "androidx.room:room-runtime:2.8.3"
+  - "de.jensklingenberg.ktorfit:ktorfit-lib:2.6.4"
 
 settings:
   android:
@@ -31,10 +32,13 @@ settings:
 
   junit: junit-4
   kotlin:
+
     serialization:
       format: json
     ksp:
+#      version: 2.0.4
       processorOptions:
         room.schemaLocation: ../schema
       processors:
         - androidx.room:room-compiler:2.8.3
+        - de.jensklingenberg.ktorfit:ktorfit-ksp:2.6.4

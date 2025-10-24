@@ -19,7 +19,6 @@ dependencies:
   - "androidx.room:room-runtime:2.8.3"
 
 settings:
-
   android:
     namespace: com.github.springeye.diskraidpower
     applicationId: com.github.springeye.diskraidpower

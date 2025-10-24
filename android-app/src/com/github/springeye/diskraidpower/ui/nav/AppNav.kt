@@ -9,13 +9,15 @@ import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import com.github.springeye.diskraidpower.ui.home.HomeRoute
 import kotlinx.serialization.Serializable
+sealed class NavRoute: NavKey{
+    @Serializable
+    data object Home : NavRoute()
 
-@Serializable
-data object Home :NavKey
+}
 
 @Composable
 fun AppNav() {
-    val backStack = rememberNavBackStack(Home)
+    val backStack = rememberNavBackStack(NavRoute.Home)
     NavDisplay(
         entryDecorators = listOf(
             // Add the default decorators for managing scenes and saving state
@@ -25,7 +27,7 @@ fun AppNav() {
         ),
         backStack = backStack,
         entryProvider = entryProvider {
-            entry<Home> {
+            entry<NavRoute.Home> {
                 HomeRoute()
             }
         },

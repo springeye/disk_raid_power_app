@@ -3,6 +3,7 @@ apply:
   - ../common.module-template.yaml
 dependencies:
   - ../shared
+  - $compose.uiTooling
   - $libs.koin.android
   - $libs.koin.androidx.compose
   - androidx.core:core-ktx:1.16.0
@@ -18,6 +19,7 @@ dependencies:
   - "androidx.room:room-runtime:2.8.3"
 
 settings:
+
   android:
     namespace: com.github.springeye.diskraidpower
     applicationId: com.github.springeye.diskraidpower
@@ -27,6 +29,7 @@ settings:
   compose:
     enabled: true
     version: 1.8.2
+
   junit: junit-4
   kotlin:
     serialization:

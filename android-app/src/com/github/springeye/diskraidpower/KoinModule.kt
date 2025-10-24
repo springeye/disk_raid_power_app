@@ -2,6 +2,8 @@ package com.github.springeye.diskraidpower
 
 import android.app.Application
 import android.bluetooth.BluetoothManager
+import androidx.room.Room
+import com.github.springeye.diskraidpower.db.AppDatabase
 import com.github.springeye.diskraidpower.http.createEspApi
 import com.github.springeye.diskraidpower.ui.home.HomeViewModel
 import de.jensklingenberg.ktorfit.Ktorfit
@@ -17,7 +19,13 @@ val appModule = module {
     single {
         get<Ktorfit>().createEspApi()
     }
+    single {
+        Room.inMemoryDatabaseBuilder<AppDatabase>(get()).build()
+    }
+    single {
+        get<AppDatabase>().deviceDao()
+    }
     viewModel { ESP32ControlViewModel(get()) }
-    viewModel { HomeViewModel(get(),get()) }
+    viewModel { HomeViewModel(get(),get(),get()) }
 }
 

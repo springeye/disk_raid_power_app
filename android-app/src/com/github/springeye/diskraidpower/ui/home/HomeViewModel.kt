@@ -15,6 +15,7 @@ import android.os.Build
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
+import com.github.springeye.diskraidpower.db.DeviceDao
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
@@ -23,6 +24,8 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Semaphore
@@ -38,7 +41,8 @@ import kotlin.math.pow
 @Suppress("UNUSED_PARAMETER")
 class HomeViewModel(
     private val app: Application,
-    _savedStateHandle: SavedStateHandle // intentionally unused for now
+    private val deviceDao: DeviceDao,
+    private val savedStateHandle: SavedStateHandle // intentionally unused for now
 ) : AndroidViewModel(app) {
     private val _state = MutableStateFlow<HomeState>(HomeState())
     val state: StateFlow<HomeState> = _state.asStateFlow()
@@ -47,6 +51,13 @@ class HomeViewModel(
     private val connectivityManager = app.applicationContext.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
 
     private var networkCallback: ConnectivityManager.NetworkCallback? = null
+    init {
+        deviceDao.findAll().onEach {devices->
+            _state.update {
+                it.copy(devices=devices)
+            }
+        }.launchIn(viewModelScope)
+    }
 
     // 启动：扫描 AP -> 找到目标 SSID -> 请求临时连接 -> 连接后尝试获取 IP 或做子网探测
     fun startConnectToEsp(targetSsid: String, passphrase: String? = null) {

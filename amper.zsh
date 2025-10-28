@@ -65,15 +65,20 @@ _amper() {
           [[ ${i} -gt COMP_CWORD ]] && in_param='--shared-caches-root' || in_param=''
           continue
           ;;
-        --async-profiler)
-          __skip_opt_eq
-          in_param=''
-          continue
-          ;;
         --build-output)
           __skip_opt_eq
           (( i = i + 1 ))
           [[ ${i} -gt COMP_CWORD ]] && in_param='--build-output' || in_param=''
+          continue
+          ;;
+        --profile)
+          __skip_opt_eq
+          in_param=''
+          continue
+          ;;
+        --coroutines-debug)
+          __skip_opt_eq
+          in_param=''
           continue
           ;;
         -h|--help)
@@ -106,10 +111,6 @@ _amper() {
         ;;
       package)
         _amper_package $(( i + 1 ))
-        return
-        ;;
-      prepare-plugins)
-        _amper_prepare_plugins $(( i + 1 ))
         return
         ;;
       publish)
@@ -153,7 +154,7 @@ _amper() {
   done
   local word="${COMP_WORDS[$COMP_CWORD]}"
   if [[ "${word}" =~ ^[-] ]]; then
-    COMPREPLY=($(compgen -W '--version -v --root --log-level --shared-caches-root --async-profiler --build-output -h --help' -- "${word}"))
+    COMPREPLY=($(compgen -W '--version -v --root --log-level --shared-caches-root --build-output --profile --coroutines-debug -h --help' -- "${word}"))
     return
   fi
 
@@ -174,15 +175,17 @@ _amper() {
     "--shared-caches-root")
        __complete_files "${word}"
       ;;
-    "--async-profiler")
-      ;;
     "--build-output")
        __complete_files "${word}"
+      ;;
+    "--profile")
+      ;;
+    "--coroutines-debug")
       ;;
     "--help")
       ;;
     *)
-      COMPREPLY=($(compgen -W 'build clean clean-shared-caches generate-completion init package prepare-plugins publish run server show task test tool update' -- "${word}"))
+      COMPREPLY=($(compgen -W 'build clean clean-shared-caches generate-completion init package publish run server show task test tool update' -- "${word}"))
       ;;
   esac
 }
@@ -536,53 +539,6 @@ _amper_package() {
   esac
 }
 
-_amper_prepare_plugins() {
-  local i=$1
-  local in_param=''
-  local fixed_arg_names=()
-  local vararg_name=''
-  local can_parse_options=1
-
-  while [[ ${i} -lt $COMP_CWORD ]]; do
-    if [[ ${can_parse_options} -eq 1 ]]; then
-      case "${COMP_WORDS[$i]}" in
-        --)
-          can_parse_options=0
-          (( i = i + 1 ));
-          continue
-          ;;
-        -h|--help)
-          __skip_opt_eq
-          in_param=''
-          continue
-          ;;
-      esac
-    fi
-    case "${COMP_WORDS[$i]}" in
-      *)
-        (( i = i + 1 ))
-        # drop the head of the array
-        fixed_arg_names=("${fixed_arg_names[@]:1}")
-        ;;
-    esac
-  done
-  local word="${COMP_WORDS[$COMP_CWORD]}"
-  if [[ "${word}" =~ ^[-] ]]; then
-    COMPREPLY=($(compgen -W '-h --help' -- "${word}"))
-    return
-  fi
-
-  # We're either at an option's value, or the first remaining fixed size
-  # arg, or the vararg if there are no fixed args left
-  [[ -z "${in_param}" ]] && in_param=${fixed_arg_names[0]}
-  [[ -z "${in_param}" ]] && in_param=${vararg_name}
-
-  case "${in_param}" in
-    "--help")
-      ;;
-  esac
-}
-
 _amper_publish() {
   local i=$1
   local in_param=''
@@ -697,6 +653,11 @@ _amper_run() {
           [[ ${i} -gt COMP_CWORD ]] && in_param='--working-dir' || in_param=''
           continue
           ;;
+        --compose-hot-reload-mode)
+          __skip_opt_eq
+          in_param=''
+          continue
+          ;;
         -h|--help)
           __skip_opt_eq
           in_param=''
@@ -714,7 +675,7 @@ _amper_run() {
   done
   local word="${COMP_WORDS[$COMP_CWORD]}"
   if [[ "${word}" =~ ^[-] ]]; then
-    COMPREPLY=($(compgen -W '-m --module -p --platform -d --device-id -v --variant --jvm-args --main-class --working-dir -h --help' -- "${word}"))
+    COMPREPLY=($(compgen -W '-m --module -p --platform -d --device-id -v --variant --jvm-args --main-class --working-dir --compose-hot-reload-mode -h --help' -- "${word}"))
     return
   fi
 
@@ -740,6 +701,8 @@ _amper_run() {
       ;;
     "--working-dir")
        __complete_files "${word}"
+      ;;
+    "--compose-hot-reload-mode")
       ;;
     "--help")
       ;;
@@ -769,6 +732,11 @@ _amper_server() {
           [[ ${i} -gt COMP_CWORD ]] && in_param='--port' || in_param=''
           continue
           ;;
+        --compose-hot-reload-mode)
+          __skip_opt_eq
+          in_param=''
+          continue
+          ;;
         -l|--log-level)
           __skip_opt_eq
           (( i = i + 1 ))
@@ -792,7 +760,7 @@ _amper_server() {
   done
   local word="${COMP_WORDS[$COMP_CWORD]}"
   if [[ "${word}" =~ ^[-] ]]; then
-    COMPREPLY=($(compgen -W '-p --port -l --log-level -h --help' -- "${word}"))
+    COMPREPLY=($(compgen -W '-p --port --compose-hot-reload-mode -l --log-level -h --help' -- "${word}"))
     return
   fi
 
@@ -803,6 +771,8 @@ _amper_server() {
 
   case "${in_param}" in
     "--port")
+      ;;
+    "--compose-hot-reload-mode")
       ;;
     "--log-level")
       COMPREPLY=($(compgen -W 'debug info warn error off' -- "${word}"))
